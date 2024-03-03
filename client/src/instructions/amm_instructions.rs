@@ -543,8 +543,7 @@ pub fn swap_instr(
 
 pub fn get_swap_instr(
     payer: &keypair::Keypair,
-    cluster: anchor_client::Cluster,
-    raydium_v3_program: Pubkey,
+    program: anchor_client::Program<Rc<solana_sdk::signer::keypair::Keypair>>,
     amm_config: Pubkey,
     pool_account_key: Pubkey,
     input_vault: Pubkey,
@@ -559,15 +558,7 @@ pub fn get_swap_instr(
     sqrt_price_limit_x64: Option<u128>,
     is_base_input: bool,
 ) -> Result<Vec<Instruction>> {
-    let anchor_client: Client<Rc<keypair::Keypair>> = anchor_client::Client::new_with_options(
-        cluster,
-        Rc::new(payer.insecure_clone()),
-        solana_sdk::commitment_config::CommitmentConfig::confirmed(),
-    );
-    let program = anchor_client.program(raydium_v3_program);
-
     let instructions = program
-        .unwrap()
         .request()
         .accounts(raydium_accounts::SwapSingle {
             payer: payer.insecure_clone().pubkey(),
