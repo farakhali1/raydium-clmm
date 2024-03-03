@@ -2,6 +2,7 @@ use anchor_client::{Client, Cluster};
 use anchor_lang::prelude::AccountMeta;
 use anyhow::Result;
 use mpl_token_metadata::state::PREFIX as MPL_PREFIX;
+use solana_sdk::signer::keypair;
 use solana_sdk::{
     instruction::Instruction, pubkey::Pubkey, signature::Signer, system_program, sysvar,
 };
@@ -515,6 +516,51 @@ pub fn swap_instr(
     // Client.
     let client = Client::new(url, Rc::new(payer));
     let program = client.program(config.raydium_v3_program)?;
+    let instructions = program
+        .request()
+        .accounts(raydium_accounts::SwapSingle {
+            payer: program.payer(),
+            amm_config,
+            pool_state: pool_account_key,
+            input_token_account: user_input_token,
+            output_token_account: user_out_put_token,
+            input_vault,
+            output_vault,
+            tick_array,
+            observation_state,
+            token_program: spl_token::id(),
+        })
+        .accounts(remaining_accounts)
+        .args(raydium_instruction::Swap {
+            amount,
+            other_amount_threshold,
+            sqrt_price_limit_x64: sqrt_price_limit_x64.unwrap_or(0u128),
+            is_base_input,
+        })
+        .instructions()?;
+    Ok(instructions)
+}
+
+pub fn get_swap_instr(
+    payer: keypair::Keypair,
+    cluster: Cluster,
+    raydium_v3_program: Pubkey,
+    amm_config: Pubkey,
+    pool_account_key: Pubkey,
+    input_vault: Pubkey,
+    output_vault: Pubkey,
+    observation_state: Pubkey,
+    user_input_token: Pubkey,
+    user_out_put_token: Pubkey,
+    tick_array: Pubkey,
+    remaining_accounts: Vec<AccountMeta>,
+    amount: u64,
+    other_amount_threshold: u64,
+    sqrt_price_limit_x64: Option<u128>,
+    is_base_input: bool,
+) -> Result<Vec<Instruction>> {
+    let client = Client::new(cluster, Rc::new(payer));
+    let program = client.program(raydium_v3_program)?;
     let instructions = program
         .request()
         .accounts(raydium_accounts::SwapSingle {
