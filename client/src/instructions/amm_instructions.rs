@@ -2,6 +2,7 @@ use anchor_client::{Client, Cluster};
 use anchor_lang::prelude::AccountMeta;
 use anyhow::Result;
 use mpl_token_metadata::state::PREFIX as MPL_PREFIX;
+use solana_sdk::signature::Keypair;
 use solana_sdk::signer::keypair;
 use solana_sdk::{
     instruction::Instruction, pubkey::Pubkey, signature::Signer, system_program, sysvar,
@@ -542,8 +543,10 @@ pub fn swap_instr(
 }
 
 pub fn get_swap_instr(
-    payer: &keypair::Keypair,
-    program: anchor_client::Program<Rc<solana_sdk::signer::keypair::Keypair>>,
+    http_url: &String,
+    ws_url: &String,
+    raydium_v3_program: &Pubkey,
+    payer: &Keypair,
     amm_config: Pubkey,
     pool_account_key: Pubkey,
     input_vault: Pubkey,
@@ -558,10 +561,14 @@ pub fn get_swap_instr(
     sqrt_price_limit_x64: Option<u128>,
     is_base_input: bool,
 ) -> Result<Vec<Instruction>> {
+    let url: Cluster = Cluster::Custom(http_url.clone(), ws_url.clone());
+    // Client.
+    let client = Client::new(url, Rc::new(payer.insecure_clone()));
+    let program = client.program(*raydium_v3_program)?;
     let instructions = program
         .request()
         .accounts(raydium_accounts::SwapSingle {
-            payer: payer.insecure_clone().pubkey(),
+            payer: program.payer(),
             amm_config,
             pool_state: pool_account_key,
             input_token_account: user_input_token,
