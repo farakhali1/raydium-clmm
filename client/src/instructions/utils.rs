@@ -333,7 +333,7 @@ pub fn get_out_put_amount_and_remaining_accounts(
         tickarray_bitmap_extension,
         tick_arrays,
     )?;
-    println!("tick_array_start_index:{:?}", tick_array_start_index_vec);
+    // println!("tick_array_start_index:{:?}", tick_array_start_index_vec);
 
     Ok((amount_calculated, tick_array_start_index_vec))
 }
